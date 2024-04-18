@@ -31,12 +31,11 @@ public:
 		return fuel_level;
 	}
 	Tank(int volume) : VOLUME(volume < min_tank_volume?min_tank_volume:
-	volume > max_tank_volume?max_tank_volume:
-	volume)
+							  volume>max_tank_volume?max_tank_volume:volume)
 	{
-		if (volume < min_tank_volume)volume = min_tank_volume;
+		/*if (volume < min_tank_volume)volume = min_tank_volume;
 		if (volume > max_tank_volume)volume = max_tank_volume;
-		this->VOLUME - volume;
+		this->VOLUME - volume;*/
 
 		this->fuel_level = 0;
 		cout << "Tank is ready" << this << endl;
