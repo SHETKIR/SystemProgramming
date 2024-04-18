@@ -51,6 +51,6 @@ public:
 void main()
 {
 	setlocale(LC_ALL, "");
-	Tank tank(50);
+	Tank tank(-50);
 	tank.info();
 }
