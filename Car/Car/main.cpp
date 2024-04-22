@@ -1,7 +1,11 @@
 #include<iostream>
 #include <conio.h>
+#include <thread>
+#include<Windows.h>
 using namespace std;
 
+#define ENTER 13
+#define ESCAPE 27	
 #define min_tank_volume 20
 #define max_tank_volume 120
 
@@ -111,6 +115,11 @@ class Car
 	Engine engine;
 	Tank tank;
 	bool driver_inside;
+	struct Threads
+	{
+		std::thread panel_thread;
+		std::thread engine_idle_thread;
+	}threads;
 public:
 	Car(int consumption = 10, int volume = 60) : engine(consumption), tank(volume), driver_inside(false)
 	{
@@ -127,57 +136,74 @@ public:
 	}
 	void get_in() {
 		driver_inside = true;
+		threads.panel_thread = std::thread(&Car::panel, this);
 	}
 	void get_out() {
+
 		driver_inside = false;
+		if(threads.panel_thread.joinable())threads.panel_thread.join();
+		system("CLS");
 		cout << "Out of the car" << endl;
 		panel();
 	}
+
+
 
 	void control() {
 		char key;
 		do {
 			key = _getch();
 			switch (key) {
-			case 13:
+			case 'F':
+			case 'f': 
+
 				if (driver_inside) {
-					get_out();
+				
+					cout << "Get out of the car\a" << endl;
 				}
-				else {
-					get_in();
-				}
-				break;
-			case 's':
-				if (engine.started()) {
-					engine.stop();
-					cout << "Engine is stopped" << endl;
-				}
-				else {
-					engine.start();
-					cout << "Engine is started" << endl;
-				}
-				break;
-			case 'i':
-				if (engine.started()) {
-					double idle_consumption = engine.get_consumption() * 0.0003;
-					tank.give_fuel(idle_consumption);
-					cout << "Fuel consumed: " << idle_consumption << " liters" << endl;
-				}
-				else {
-					cout << "Engine is not started. Start the engine first." << endl;
-				}
-				break;
-			default:
-				break;
+
+			else{
+			
+				double fuel;
+				cout << "¬ведите уровень топлива: "; cin >> fuel;
+				tank.fill(fuel);
+				}break;
+			case ENTER: driver_inside ? get_out() : get_in(); break;
+			case 'I':
+			case 'i': engine.started() ? stop() : start(); break;
+			case ESCAPE: stop(); get_out(); break;
 			}
 		} while (key != 27);
+	}
+
+	void engine_idle() {
+		while (engine.started() && tank.give_fuel(engine.get_consumption_per_second()))this_thread::sleep_for(1s);
 	}
 	void panel() const {
 		while (driver_inside) {
 			system("CLS");
+			if (tank.get_fuel_level() < 5) {
+			
+				HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
+				SetConsoleTextAttribute(hConsole, 0xCF);
+				cout << " low fuel ";
+				SetConsoleTextAttribute(hConsole, 0xC07);
+			}
+			cout<<endl;
 			cout << "Fuel level: \t" << tank.get_fuel_level() << "liters.\n";
 			cout << "Engine is: " << (engine.started() ? "started" : "stopped") << endl;
+			std::this_thread::sleep_for(100ms);
 		}
+	}
+	void start() {
+		if (tank.get_fuel_level()) {
+			engine.start();
+			threads.engine_idle_thread = std::thread(&Car::engine_idle, this);
+		}
+		}
+	void stop() {
+		engine.stop();
+		if (threads.engine_idle_thread.joinable())threads.engine_idle_thread.join();
 	}
 };
 
